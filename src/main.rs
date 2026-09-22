@@ -25,9 +25,17 @@ struct CohereRerankRequest {
 
 // 转发给 Cloudflare 的请求体
 #[derive(Debug, Serialize)]
+struct CloudflareContext {
+    text: String,
+}
+
+#[derive(Debug, Serialize)]
 struct CloudflareRerankRequest {
     query: String,
-    contexts: Vec<String>,
+    // Cloudflare @cf/baai/bge-reranker-base 要求 contexts 是
+    // [{text: "..."}, ...] 形式的数组，而不是字符串数组；字符串数组
+    // 会触发 Cloudflare 端 code:8001 AiError: Invalid input。
+    contexts: Vec<CloudflareContext>,
     top_k: usize,
 }
 
@@ -71,7 +79,11 @@ async fn rerank(
 
     let cf_payload = CloudflareRerankRequest {
         query: payload.query,
-        contexts: payload.documents,
+        contexts: payload
+            .documents
+            .into_iter()
+            .map(|text| CloudflareContext { text })
+            .collect(),
         top_k: top_n,
     };
 
