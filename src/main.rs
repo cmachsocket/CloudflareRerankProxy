@@ -167,7 +167,10 @@ async fn main() {
     });
 
     let app = Router::new()
-        .route("/rerank", post(rerank))
+        // Cohere SDK posts to {base_url}/v1/rerank; accept both paths so we
+        // match Hindsight's configured base_url (http://localhost:7070) as
+        // well as any future clients that hit the bare /rerank alias.
+        .route("/v1/rerank", post(rerank))
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
